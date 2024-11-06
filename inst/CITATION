@@ -1,0 +1,19 @@
+citHeader("To cite wROC package in publications use one or more of:")
+
+bibentry(
+  bibtype  = "misc",
+  title    = "wROC: Estimation of the ROC curve with complex survey data",
+  author   = "Amaia Iparragirre",
+  year     = 2024,
+  note     = "R package version 1.0.0.",
+  textVersion = "A. Iparragirre (2024) \"wROC: Estimation of the ROC curve with complex survey data\". R package version 1.0.0."
+)
+
+bibentry(bibtype="article",
+  year= 2023,
+  author="maia Iparragirre and Irantzu Barrio and Inmaculada Arostegui",
+  title = "Estimation of the ROC curve and the area under it with complex survey data",
+  journal="Stat",
+  volume="12",number=1,pages="e635"
+)
+
