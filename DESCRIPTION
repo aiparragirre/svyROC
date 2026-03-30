@@ -1,6 +1,6 @@
 Package: svyROC
 Title: Estimation of the ROC Curve and the AUC for Complex Survey Data
-Version: 1.0.0
+Version: 1.1.0
 Authors@R: 
     c(person("Amaia", "Iparragirre", , "amaia.iparragirre@ehu.eus", role = c("aut", "cre", "cph"),
              comment = c(ORCID = "0000-0002-0660-6535")),
@@ -11,9 +11,9 @@ Description: Estimate the receiver operating characteristic (ROC) curve, area un
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Depends: 
-    R (>= 2.10)
+    R (>= 3.5)
 LazyData: true
 Imports: 
     survey,

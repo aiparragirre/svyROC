@@ -25,6 +25,9 @@ The following functions are available:
 - `corrected.wauc`: correct the optimism of the weighted estimate of the AUC by means of replicate weights.
 - `wocp`: calculate optimal cut-off points for individual classification considering sampling weights.
 - `wroc.plot`: plot the ROC curve.
+- `ci.wauc`: confidence intervals for the AUC.
+- `ht.indep`: hypothesis test for the comparison of two independent AUCs.
+- `ht.paired`: hypothesis test for the comparison of two paired AUCs.
 
 The methodology proposed for the above-mentioned functions can be found in the following **references**:
 

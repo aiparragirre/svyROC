@@ -68,11 +68,18 @@
 #'
 wauc <- function(response.var, phat.var, weights.var = NULL, tag.event = NULL, tag.nonevent = NULL, data = NULL, design = NULL){
 
+  if(!is.null(design)){
+    data <- get(design$call$data)
+    weights <- as.character(design$call$weights[2])
+    weights.var <- data[,weights]
+  }
+  
   if(inherits(response.var, "character")){
     response.var <- data[,response.var]
   }
 
   if(length(table(response.var))!=2){stop("Response variable must have two classes.")}
+  
 
   if(inherits(phat.var, "character")){
     phat.var <- data[,phat.var]
@@ -80,12 +87,6 @@ wauc <- function(response.var, phat.var, weights.var = NULL, tag.event = NULL, t
 
   if(inherits(weights.var, "character")){
     weights.var <- data[,weights.var]
-  }
-
-  if(!is.null(design)){
-    data <- get(design$call$data)
-    weights <- as.character(design$call$weights[2])
-    weights.var <- data[,weights]
   }
 
   if(length(response.var) != length(phat.var) || length(response.var) != length(weights.var)){
