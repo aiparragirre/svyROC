@@ -37,6 +37,8 @@ The methodology proposed for the above-mentioned functions can be found in the f
 
 - Iparragirre, A. and Barrio, I. (2024). Optimism Correction of the AUC with Complex Survey Data. In: Einbeck, J., Maeng, H., Ogundimu, E., Perrakis, K. (eds) Developments in Statistical Modelling. IWSM 2024. Contributions to Statistics. Springer, Cham. 
 
+- Iparragirre, A., Lumley, T., & Barrio, I. (2026). Design-Based Inference for the AUC with Complex Survey Data. arXiv, 2603.28320. (https://arxiv.org/abs/2603.28320)
+
 
 ## Installation
 

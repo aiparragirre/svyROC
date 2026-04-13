@@ -87,3 +87,9 @@ boot.ht <- ht.indep(design.1=des.1, response.var.1="y", phat.var.1 = "phat.1",
 }
                     
 }
+\references{
+Iparragirre, A., Lumley, T., & Barrio, I. (2026).
+Design-Based Inference for the AUC with Complex Survey Data.
+arXiv, 2603.28320.
+(https://arxiv.org/abs/2603.28320)
+}

@@ -71,3 +71,9 @@ ci.boot <- ci.wauc(design=mydesign, response.var = "y", phat.var = "phat",
 }
 
 }
+\references{
+Iparragirre, A., Lumley, T., & Barrio, I. (2026).
+Design-Based Inference for the AUC with Complex Survey Data.
+arXiv, 2603.28320.
+(https://arxiv.org/abs/2603.28320)
+}
