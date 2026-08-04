@@ -1,6 +1,6 @@
 Package: svyROC
 Title: Estimation of the ROC Curve and the AUC for Complex Survey Data
-Version: 1.1.0
+Version: 1.1.1
 Authors@R: 
     c(person("Amaia", "Iparragirre", , "amaia.iparragirre@ehu.eus", role = c("aut", "cre", "cph"),
              comment = c(ORCID = "0000-0002-0660-6535")),

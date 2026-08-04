@@ -136,7 +136,15 @@ wroc <- function(response.var, phat.var, weights.var = NULL,
 
   lower <- all.phat[1:(length(all.phat)-1)]
   upper <- all.phat[2:length(all.phat)]
-  cutoffs <- rev(c(0, (lower+upper)/2, 1))
+  # The largest cut-off must select nothing, so that the curve begins at its
+  # (Sp = 1, Se = 0) origin. A cut-off of 1 does not achieve that when an
+  # observation sits at exactly 1: wse() thresholds with phat >= c, so
+  # sensitivity is already positive at the first grid point, the origin is
+  # never emitted, and the shoelace sum below understates the area by Se_1/2.
+  # Added only when it is needed, so that the returned grid -- and every value
+  # derived from it -- is unchanged whenever max(phat.var) < 1.
+  top <- if (max(all.phat) >= 1) max(all.phat) + 1 else NULL
+  cutoffs <- rev(c(0, (lower+upper)/2, 1, top))
 
   # ROCw curve:
   sew.v <- sapply(lapply(cutoffs, wse, response.var = response.var, tag.event = tag.event, phat.var = phat.var, weights.var = weights.var), "[[", 1)
