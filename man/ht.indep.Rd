@@ -15,6 +15,7 @@ ht.indep(
   tag.nonevent = NULL,
   alternative = c("two.sided", "greater", "less"),
   method = c("JKn", "subbootstrap"),
+  df = NULL,
   boot.B = 1000
 )
 }
@@ -44,6 +45,9 @@ Default is \code{alternative = 'two.sided'}.}
 
 \item{method}{A character string indicating the method implemented to estimate the variance:
 \code{method = 'JKn'} or \code{method = 'subbootstrap'}. Default is \code{method = 'JKn'}.}
+
+\item{df}{Degrees of freedom for constructing confidence intervals based on the t distribution. Defaults to \code{df = degf(design.1)+degf(design.2)}.
+Use \code{df = Inf} to apply the normal distribution instead.}
 
 \item{boot.B}{A numeric value indicating the number of bootstrap resamples to be considered. Default is \code{boot.B=1000}. Only for \code{method = 'subbootstrap'}.}
 }
@@ -75,10 +79,14 @@ example_variables_wroc$phat.2 <- predict(m.1, newdata = example_variables_wroc_2
 des.2 <- survey::svydesign(ids = ~cluster, strata = ~strata, weights = ~weights,
                            data = example_variables_wroc_2, nest=TRUE)
                            
-# JKn-based hypothesis test:
+# JKn-based hypothesis test (t distribution with df=degf(design.1)+degf(design.2)):
 jkn.ht <- ht.indep(design.1=des.1, response.var.1="y", phat.var.1 = "phat.1",
                    design.2=des.2, response.var.2="y", phat.var.2 = "phat.2",
                    tag.event=1, tag.nonevent=0, method="JKn")
+# JKn-based hypothesis test (normal distribution):
+jkn.ht <- ht.indep(design.1=des.1, response.var.1="y", phat.var.1 = "phat.1",
+                   design.2=des.2, response.var.2="y", phat.var.2 = "phat.2",
+                   tag.event=1, tag.nonevent=0, method="JKn", df=Inf)
                    
 # Bootstrap-based hypothesis test:
 boot.ht <- ht.indep(design.1=des.1, response.var.1="y", phat.var.1 = "phat.1",

@@ -11,8 +11,9 @@ ci.wauc(
   tag.event = NULL,
   tag.nonevent = NULL,
   method = c("JKn", "subbootstrap"),
+  df = NULL,
   boot.B = 1000,
-  boot.ci = c("normal", "quantile"),
+  boot.ci.quantile = FALSE,
   conf.level = 0.95
 )
 }
@@ -33,10 +34,12 @@ The default option is \code{tag.nonevent = NULL}, which selects the class with t
 \item{method}{A character string indicating the method implemented to calculate the confidence interval:
 \code{method = 'JKn'} or \code{method = 'subbootstrap'}. Default is \code{method = 'JKn'}.}
 
+\item{df}{Degrees of freedom for constructing confidence intervals based on the t distribution. Defaults to \code{df = degf(design)} which computes the number of PSUs
+minus the number of strata. Use \code{df = Inf} to apply the normal distribution instead.}
+
 \item{boot.B}{A numeric value indicating the number of bootstrap resamples to be considered. Default is \code{boot.B=1000}. Only for \code{method = 'subbootstrap'}.}
 
-\item{boot.ci}{Select \code{boot.ci = 'normal'} for standardized normal distribution-based confidence intervals
-and \code{boot.ci = 'quantile'} for confidence intervals based on quantiles. Default is \code{boot.ci = 'normal'}. Only for \code{method = 'subbootstrap'}.}
+\item{boot.ci.quantile}{Logical. If \code{TRUE}, confidence intervals are constructed based on quantiles of the bootstrap distribution. Only used when \code{method = 'subbootstrap'}. Defaults to \code{FALSE}.}
 
 \item{conf.level}{A numeric value between 0 and 1 indicating the confidence level. Default is \code{conf.level = 0.95}, resulting in a 95\% CI.}
 }
@@ -60,14 +63,22 @@ example_variables_wroc$phat <- phat
 mydesign <- survey::svydesign(ids = ~cluster, strata = ~strata, weights = ~weights, 
 data = example_variables_wroc, nest=TRUE)
 
-# JKn-based confidence interval:
-ci.JKn <- ci.wauc(design=mydesign, response.var = "y", phat.var = "phat", 
+# JKn-based confidence interval (t distribution with degf(design) degrees of freedom):
+ci.JKn.t <- ci.wauc(design=mydesign, response.var = "y", phat.var = "phat", 
                   tag.event = 1, tag.nonevent = 0, method="JKn")
+# JKn-based confidence interval with normal distribution:
+ci.JKn.n <- ci.wauc(design=mydesign, response.var = "y", phat.var = "phat", 
+                  tag.event = 1, tag.nonevent = 0, method="JKn", df=Inf)
+                  
 
-# Bootstrap-based confidence interval:
+# Bootstrap-based confidence interval (t distribution with degf(design) degrees of freedom):
 set.seed(123)
-ci.boot <- ci.wauc(design=mydesign, response.var = "y", phat.var = "phat", 
-                   tag.event = 1, tag.nonevent = 0, method="subbootstrap")
+ci.boot.t <- ci.wauc(design=mydesign, response.var = "y", phat.var = "phat", 
+                     tag.event = 1, tag.nonevent = 0, method="subbootstrap")
+# Bootstrap-based confidence interval with normal distribution:
+set.seed(123)
+ci.boot.n <- ci.wauc(design=mydesign, response.var = "y", phat.var = "phat", 
+                   tag.event = 1, tag.nonevent = 0, method="subbootstrap", df=Inf)
 }
 
 }

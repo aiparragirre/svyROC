@@ -13,6 +13,7 @@ ht.paired(
   tag.nonevent = NULL,
   alternative = c("two.sided", "greater", "less"),
   method = c("JKn", "subbootstrap"),
+  df = NULL,
   boot.B = 1000
 )
 }
@@ -37,6 +38,9 @@ Default is \code{alternative = 'two.sided'}.}
 
 \item{method}{A character string indicating the method implemented to estimate the variance:
 \code{method = 'JKn'} or \code{method = 'subbootstrap'}. Default is \code{method = 'JKn'}.}
+
+\item{df}{Degrees of freedom for constructing confidence intervals based on the t distribution. Defaults to \code{df = degf(design)} which computes the number of PSUs
+minus the number of strata. Use \code{df = Inf} to apply the normal distribution instead.}
 
 \item{boot.B}{A numeric value indicating the number of bootstrap resamples to be considered. Default is \code{boot.B=1000}. Only for \code{method = 'subbootstrap'}.}
 }
@@ -66,10 +70,14 @@ example_variables_wroc$phat.2 <- phat.2
 mydesign <- survey::svydesign(ids = ~cluster, strata = ~strata, weights = ~weights,
 data = example_variables_wroc, nest=TRUE)
 
-# JKn-based hypothesis test:
-ht.JKn <- ht.paired(design=mydesign, response.var = "y", phat.var.1 = "phat.1",
+# JKn-based hypothesis test (t distribution with df = degf(design)):
+ht.JKn.t <- ht.paired(design=mydesign, response.var = "y", phat.var.1 = "phat.1",
                     phat.var.2 = "phat.2", tag.event = 1, tag.nonevent = 0, 
                     method="JKn")
+# JKn-based hypothesis test with normal distribution:
+ht.JKn.n <- ht.paired(design=mydesign, response.var = "y", phat.var.1 = "phat.1",
+                    phat.var.2 = "phat.2", tag.event = 1, tag.nonevent = 0, 
+                    method="JKn", df = Inf)
                     
 # Bootstrap-based hypothesis test:
 set.seed(123)

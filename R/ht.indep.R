@@ -16,6 +16,8 @@
 #' Default is \code{alternative = 'two.sided'}.
 #' @param method A character string indicating the method implemented to estimate the variance: 
 #' \code{method = 'JKn'} or \code{method = 'subbootstrap'}. Default is \code{method = 'JKn'}.
+#' @param df Degrees of freedom for constructing confidence intervals based on the t distribution. Defaults to `df = degf(design.1)+degf(design.2)`. 
+#' Use `df = Inf` to apply the normal distribution instead.
 #' @param boot.B A numeric value indicating the number of bootstrap resamples to be considered. Default is \code{boot.B=1000}. Only for \code{method = 'subbootstrap'}. 
 #'
 #' @returns The output object of this function is a list of 5 elements containing the following information:
@@ -28,6 +30,8 @@
 #' @importFrom stats pnorm
 #' @importFrom stats var
 #' @importFrom stats weights
+#' @importFrom stats model.frame
+#' @importFrom stats qt pt
 #' 
 #' @references Iparragirre, A., Lumley, T., & Barrio, I. (2026). 
 #' Design-Based Inference for the AUC with Complex Survey Data. 
@@ -51,10 +55,14 @@
 #' des.2 <- survey::svydesign(ids = ~cluster, strata = ~strata, weights = ~weights,
 #'                            data = example_variables_wroc_2, nest=TRUE)
 #'                            
-#' # JKn-based hypothesis test:
+#' # JKn-based hypothesis test (t distribution with df=degf(design.1)+degf(design.2)):
 #' jkn.ht <- ht.indep(design.1=des.1, response.var.1="y", phat.var.1 = "phat.1",
 #'                    design.2=des.2, response.var.2="y", phat.var.2 = "phat.2",
 #'                    tag.event=1, tag.nonevent=0, method="JKn")
+#' # JKn-based hypothesis test (normal distribution):
+#' jkn.ht <- ht.indep(design.1=des.1, response.var.1="y", phat.var.1 = "phat.1",
+#'                    design.2=des.2, response.var.2="y", phat.var.2 = "phat.2",
+#'                    tag.event=1, tag.nonevent=0, method="JKn", df=Inf)
 #'                    
 #' # Bootstrap-based hypothesis test:
 #' boot.ht <- ht.indep(design.1=des.1, response.var.1="y", phat.var.1 = "phat.1",
@@ -66,15 +74,21 @@ ht.indep <- function(design.1, response.var.1, phat.var.1,
                      design.2, response.var.2, phat.var.2, 
                      tag.event = NULL, tag.nonevent = NULL,
                      alternative = c("two.sided", "greater", "less"),
-                     method = c("JKn","subbootstrap"), boot.B=1000){
+                     method = c("JKn","subbootstrap"), df = NULL, boot.B=1000){
   
-  data.1 <- get(design.1$call$data)
-  weights.1 <- as.character(design.1$call$weights[2])
-  weights.var.1 <- data.1[,weights.1]
+  # data.1 <- get(design.1$call$data)
+  # weights.1 <- as.character(design.1$call$weights[2])
+  # weights.var.1 <- data.1[,weights.1]
+  # 
+  # data.2 <- get(design.2$call$data)
+  # weights.2 <- as.character(design.2$call$weights[2])
+  # weights.var.2 <- data.2[,weights.2]
   
-  data.2 <- get(design.2$call$data)
-  weights.2 <- as.character(design.2$call$weights[2])
-  weights.var.2 <- data.2[,weights.2]
+  data.1 <- model.frame(design.1)
+  weights.var.1 <- weights(design.1)
+  
+  data.2 <- model.frame(design.2)
+  weights.var.2 <- weights(design.2)
   
   if(inherits(response.var.1, "character")){
     response.var.1 <- data.1[,response.var.1]
@@ -124,6 +138,12 @@ ht.indep <- function(design.1, response.var.1, phat.var.1,
   
   method <- match.arg(method)
   alternative <- match.arg(alternative)
+  
+  if(is.null(df)){
+    df.1 <- degf(design.1)
+    df.2 <- degf(design.2)
+    df <- df.1 + df.2
+  }
   
   # Point estimates:
   wauc.1 <- wauc(response.var = response.var.1, phat.var = phat.var.1, weights.var = weights.var.1, 
@@ -216,13 +236,28 @@ ht.indep <- function(design.1, response.var.1, phat.var.1,
   }
   
   if (alternative == "two.sided") {
-    pval <- 2*pnorm(abs(z), lower.tail = FALSE)
+    if(df == Inf){
+      pval <- 2*pnorm(abs(z), lower.tail = FALSE)
+    } else {
+      pval <- 2*pt(abs(z), lower.tail = FALSE, df = df)
+    }
+    
   } else {
     if (alternative == "greater") {
-      pval <- pnorm(z, lower.tail = FALSE)
+      if(df == Inf){
+        pval <- pnorm(z, lower.tail = FALSE)
+      } else {
+        pval <- pt(z, lower.tail = FALSE, df = df)
+      }
+      
     } else {
       if (alternative == "less") {
-        pval <- pnorm(z, lower.tail = TRUE)
+        if(df == Inf){
+          pval <- pnorm(z, lower.tail = TRUE)
+        } else {
+          pval <- pt(z, lower.tail = TRUE, df = df)
+        }
+        
       } else {
         stop("One of the following options must be selected for the alternative hypothesis: 'two.sided', 'greater' or 'less'")
       }

@@ -10,9 +10,10 @@
 #' The default option is \code{tag.nonevent = NULL}, which selects the class with the greatest number of units as non-event.
 #' @param method A character string indicating the method implemented to calculate the confidence interval: 
 #' \code{method = 'JKn'} or \code{method = 'subbootstrap'}. Default is \code{method = 'JKn'}.
+#' @param df Degrees of freedom for constructing confidence intervals based on the t distribution. Defaults to `df = degf(design)` which computes the number of PSUs
+#' minus the number of strata. Use `df = Inf` to apply the normal distribution instead.
 #' @param boot.B A numeric value indicating the number of bootstrap resamples to be considered. Default is \code{boot.B=1000}. Only for \code{method = 'subbootstrap'}. 
-#' @param boot.ci Select \code{boot.ci = 'normal'} for standardized normal distribution-based confidence intervals 
-#' and \code{boot.ci = 'quantile'} for confidence intervals based on quantiles. Default is \code{boot.ci = 'normal'}. Only for \code{method = 'subbootstrap'}.     
+#' @param boot.ci.quantile Logical. If `TRUE`, confidence intervals are constructed based on quantiles of the bootstrap distribution. Only used when `method = 'subbootstrap'`. Defaults to `FALSE`.
 #' @param conf.level A numeric value between 0 and 1 indicating the confidence level. Default is \code{conf.level = 0.95}, resulting in a 95% CI.
 #'
 #' @return The output object of this function is a list of 2 elements containing the following information:
@@ -22,6 +23,8 @@
 #' @importFrom stats qnorm
 #' @importFrom stats quantile
 #' @importFrom stats weights
+#' @importFrom stats model.frame
+#' @importFrom stats qt pt
 #' 
 #' @references Iparragirre, A., Lumley, T., & Barrio, I. (2026). 
 #' Design-Based Inference for the AUC with Complex Survey Data. 
@@ -40,24 +43,36 @@
 #' mydesign <- survey::svydesign(ids = ~cluster, strata = ~strata, weights = ~weights, 
 #' data = example_variables_wroc, nest=TRUE)
 #' 
-#' # JKn-based confidence interval:
-#' ci.JKn <- ci.wauc(design=mydesign, response.var = "y", phat.var = "phat", 
+#' # JKn-based confidence interval (t distribution with degf(design) degrees of freedom):
+#' ci.JKn.t <- ci.wauc(design=mydesign, response.var = "y", phat.var = "phat", 
 #'                   tag.event = 1, tag.nonevent = 0, method="JKn")
+#' # JKn-based confidence interval with normal distribution:
+#' ci.JKn.n <- ci.wauc(design=mydesign, response.var = "y", phat.var = "phat", 
+#'                   tag.event = 1, tag.nonevent = 0, method="JKn", df=Inf)
+#'                   
 #' 
-#' # Bootstrap-based confidence interval:
+#' # Bootstrap-based confidence interval (t distribution with degf(design) degrees of freedom):
 #' set.seed(123)
-#' ci.boot <- ci.wauc(design=mydesign, response.var = "y", phat.var = "phat", 
-#'                    tag.event = 1, tag.nonevent = 0, method="subbootstrap")
+#' ci.boot.t <- ci.wauc(design=mydesign, response.var = "y", phat.var = "phat", 
+#'                      tag.event = 1, tag.nonevent = 0, method="subbootstrap")
+#' # Bootstrap-based confidence interval with normal distribution:
+#' set.seed(123)
+#' ci.boot.n <- ci.wauc(design=mydesign, response.var = "y", phat.var = "phat", 
+#'                    tag.event = 1, tag.nonevent = 0, method="subbootstrap", df=Inf)
 #' }
 #' 
 
 ci.wauc <- function(design, response.var, phat.var, tag.event = NULL, tag.nonevent = NULL,
-                    method = c("JKn","subbootstrap"), boot.B=1000, boot.ci = c("normal", "quantile"), 
+                    method = c("JKn","subbootstrap"), df = NULL,
+                    boot.B=1000, boot.ci.quantile = FALSE, 
                     conf.level = 0.95){
   
-  data <- get(design$call$data)
-  weights <- as.character(design$call$weights[2])
-  weights.var <- data[,weights]
+  # data <- get(design$call$data)
+  # weights <- as.character(design$call$weights[2])
+  # weights.var <- data[,weights]
+  data <- model.frame(design)
+  weights.var <- weights(design)
+  
   
   if(inherits(response.var, "character")){
     response.var <- data[,response.var]
@@ -92,9 +107,11 @@ ci.wauc <- function(design, response.var, phat.var, tag.event = NULL, tag.noneve
   }
   
   method <- match.arg(method)
-  boot.ci <- match.arg(boot.ci)
-  
+
   alpha <- 1-conf.level
+  if(is.null(df)){
+    df <- degf(design)
+  }
   
   # Point estimate:
   wauc <- wauc(response.var = response.var, phat.var = phat.var, weights.var = weights.var, tag.event = tag.event, tag.nonevent = tag.nonevent)$AUCw[1]
@@ -111,16 +128,29 @@ ci.wauc <- function(design, response.var, phat.var, tag.event = NULL, tag.noneve
         tag.nonevent = tag.nonevent
       )$AUCw[1]
     ))
-    if(boot.ci == "normal"){
-      var.RB <- var(RB.aucw.b)
-      ci.l <- wauc - qnorm(alpha/2, lower.tail = FALSE)*sqrt(var.RB)
-      ci.h <- wauc + qnorm(alpha/2, lower.tail = FALSE)*sqrt(var.RB)
+    if(boot.ci.quantile){
+      ci.l <- as.vector(quantile(RB.aucw.b, probs = c(alpha/2)))
+      ci.h <- as.vector(quantile(RB.aucw.b, probs = c(1-alpha/2)))
     } else {
-      if(boot.ci == "quantile"){
-        ci.l <- as.vector(quantile(RB.aucw.b, probs = c(alpha/2)))
-        ci.h <- as.vector(quantile(RB.aucw.b, probs = c(1-alpha/2)))
+      var.RB <- var(RB.aucw.b)
+      if(df == Inf){
+        ci.l <- wauc - qnorm(alpha/2, lower.tail = FALSE)*sqrt(var.RB)
+        ci.h <- wauc + qnorm(alpha/2, lower.tail = FALSE)*sqrt(var.RB)
+      } else {
+        ci.l <- wauc - qt(alpha/2, lower.tail = FALSE, df = df)*sqrt(var.RB)
+        ci.h <- wauc + qt(alpha/2, lower.tail = FALSE, df = df)*sqrt(var.RB)
       }
     }
+    # if(boot.ci == "normal"){
+    #   var.RB <- var(RB.aucw.b)
+    #   ci.l <- wauc - qnorm(alpha/2, lower.tail = FALSE)*sqrt(var.RB)
+    #   ci.h <- wauc + qnorm(alpha/2, lower.tail = FALSE)*sqrt(var.RB)
+    # } else {
+    #   if(boot.ci == "quantile"){
+    #     ci.l <- as.vector(quantile(RB.aucw.b, probs = c(alpha/2)))
+    #     ci.h <- as.vector(quantile(RB.aucw.b, probs = c(1-alpha/2)))
+    #   }
+    # }
   } else {
     if(method == "JKn"){
       JKn.w <- weights(survey::as.svrepdesign(design = design, type = method),"analysis")
@@ -143,8 +173,13 @@ ci.wauc <- function(design, response.var, phat.var, tag.event = NULL, tag.noneve
       })
       ah <- nclus.h[as.character(strata_ids)]
       JKn.var <- sum(((ah-1)/ah)*((JKn.aucw.1out-wauc)^2))
-      ci.l <- wauc - qnorm(alpha/2, lower.tail = FALSE)*sqrt(JKn.var)
-      ci.h <- wauc + qnorm(alpha/2, lower.tail = FALSE)*sqrt(JKn.var)
+      if(df == Inf){
+        ci.l <- wauc - qnorm(alpha/2, lower.tail = FALSE)*sqrt(JKn.var)
+        ci.h <- wauc + qnorm(alpha/2, lower.tail = FALSE)*sqrt(JKn.var)
+      } else {
+        ci.l <- wauc - qt(alpha/2, lower.tail = FALSE, df = df)*sqrt(JKn.var)
+        ci.h <- wauc + qt(alpha/2, lower.tail = FALSE, df = df)*sqrt(JKn.var)
+      }
     } else {
       stop("One of the following methods must be selected: method = 'JKn' or method = 'subbootstrap'.")
     }

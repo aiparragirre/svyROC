@@ -13,6 +13,8 @@
 #' Default is \code{alternative = 'two.sided'}.
 #' @param method A character string indicating the method implemented to estimate the variance: 
 #' \code{method = 'JKn'} or \code{method = 'subbootstrap'}. Default is \code{method = 'JKn'}.
+#' @param df Degrees of freedom for constructing confidence intervals based on the t distribution. Defaults to `df = degf(design)` which computes the number of PSUs
+#' minus the number of strata. Use `df = Inf` to apply the normal distribution instead.
 #' @param boot.B A numeric value indicating the number of bootstrap resamples to be considered. Default is \code{boot.B=1000}. Only for \code{method = 'subbootstrap'}. 
 #'
 #' @returns The output object of this function is a list of 5 elements containing the following information:
@@ -25,6 +27,8 @@
 #' @importFrom stats pnorm
 #' @importFrom stats sd
 #' @importFrom stats weights
+#' @importFrom stats model.frame
+#' @importFrom stats qt pt
 #' 
 #' @references Iparragirre, A., Lumley, T., & Barrio, I. (2026). 
 #' Design-Based Inference for the AUC with Complex Survey Data. 
@@ -46,10 +50,14 @@
 #' mydesign <- survey::svydesign(ids = ~cluster, strata = ~strata, weights = ~weights,
 #' data = example_variables_wroc, nest=TRUE)
 #' 
-#' # JKn-based hypothesis test:
-#' ht.JKn <- ht.paired(design=mydesign, response.var = "y", phat.var.1 = "phat.1",
+#' # JKn-based hypothesis test (t distribution with df = degf(design)):
+#' ht.JKn.t <- ht.paired(design=mydesign, response.var = "y", phat.var.1 = "phat.1",
 #'                     phat.var.2 = "phat.2", tag.event = 1, tag.nonevent = 0, 
 #'                     method="JKn")
+#' # JKn-based hypothesis test with normal distribution:
+#' ht.JKn.n <- ht.paired(design=mydesign, response.var = "y", phat.var.1 = "phat.1",
+#'                     phat.var.2 = "phat.2", tag.event = 1, tag.nonevent = 0, 
+#'                     method="JKn", df = Inf)
 #'                     
 #' # Bootstrap-based hypothesis test:
 #' set.seed(123)
@@ -61,11 +69,13 @@
 ht.paired <- function(design, response.var, phat.var.1, phat.var.2, 
                       tag.event = NULL, tag.nonevent = NULL,
                       alternative = c("two.sided", "greater", "less"),
-                      method = c("JKn","subbootstrap"), boot.B=1000){
+                      method = c("JKn","subbootstrap"), df = NULL, boot.B=1000){
   
-  data <- get(design$call$data)
-  weights <- as.character(design$call$weights[2])
-  weights.var <- data[,weights]
+  # data <- get(design$call$data)
+  # weights <- as.character(design$call$weights[2])
+  # weights.var <- data[,weights]
+  data <- model.frame(design)
+  weights.var <- weights(design)
   
   if(inherits(response.var, "character")){
     response.var <- data[,response.var]
@@ -105,6 +115,10 @@ ht.paired <- function(design, response.var, phat.var.1, phat.var.2,
   
   method <- match.arg(method)
   alternative <- match.arg(alternative)
+  
+  if(is.null(df)){
+    df <- degf(design)
+  }
   
   # Point estimates:
   wauc.1 <- wauc(response.var = response.var, phat.var = phat.var.1, weights.var = weights.var, 
@@ -188,13 +202,28 @@ ht.paired <- function(design, response.var, phat.var.1, phat.var.2,
   }
   
   if (alternative == "two.sided") {
-    pval <- 2*pnorm(abs(d.z), lower.tail = FALSE)
+    if(df == Inf){
+      pval <- 2*pnorm(abs(d.z), lower.tail = FALSE)
+    } else {
+      pval <- 2*pt(abs(d.z), lower.tail = FALSE, df = df)
+    }
+    
   } else {
     if (alternative == "greater") {
-      pval <- pnorm(d.z, lower.tail = FALSE)
+      if(df == Inf){
+        pval <- pnorm(d.z, lower.tail = FALSE)
+      } else {
+        pval <- pt(d.z, lower.tail = FALSE, df = df)
+      }
+      
     } else {
       if (alternative == "less") {
-        pval <- pnorm(d.z, lower.tail = TRUE)
+        if(df == Inf){
+          pval <- pnorm(d.z, lower.tail = TRUE)
+        } else {
+          pval <- pt(d.z, lower.tail = TRUE, df = df)
+        }
+        
       } else {
         stop("One of the following options must be selected for the alternative hypothesis: 'two.sided', 'greater' or 'less'")
       }
